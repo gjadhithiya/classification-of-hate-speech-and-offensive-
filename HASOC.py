@@ -120,27 +120,75 @@ print("(train_x[0] : ",train_x[0])
 print('x_train count is : ', xtrain_count[0])
 count_vect.vocabulary_
 def train_model(classifier, feature_vector_train, label, feature_vector_test, model_name):
-    # fit the training dataset 
+    # fit the training dataset on the classifier
     classifier.fit(feature_vector_train, label)
     # predict the labels on testation dataset
     predictions = classifier.predict(feature_vector_test)
     pkl.dump(classifier, open(model_name,'wb'))
-    
+    cm=confusion_matrix(test_y, predictions)
+    print("Confusion Matrix...:")
+    print(cm)
+    import seaborn as sns
+    sns.heatmap(cm, annot=True, fmt='.2%', cmap='Greens')
     return metrics.accuracy_score(predictions, test_y), classification_report (predictions, test_y,digits=5)
-# multinomial Naive Bayes
-accuracy, classi = train_model(naive_bayes.MultinomialNB(), xtrain_count, train_y, xtest_count, '1.pkl')
+# Naive Bayes on Count Vectors
+hyper = {'alpha':[1,0.5],
+         'fit_prior':[True, False]
+        }
+gd_nb=GridSearchCV(estimator=naive_bayes.MultinomialNB(),param_grid=hyper,verbose=True)
+accuracy, classi = train_model(gd_nb, xtrain_count, train_y, xtest_count, 'NB_CV.pkl')
+#accuracy, classi = train_model(naive_bayes.MultinomialNB(), xtrain_count, train_y, xtest_count, 'NB_CV.pkl')
 print ("NB, Count Vectors: ", accuracy)
 print ('\n',classi)
-
-# Logistic regression 
-accuracy, classi = train_model(linear_model.LogisticRegression(), xtrain_count, train_y, xtest_count, '2.pkl')
+print(" best score:",gd_nb.best_score_)
+print(" best estimator :",gd_nb.best_estimator_)
+#Logitics regression
+hyper = {'penalty':['l1','l2'],
+         'solver':['lbfgs','liblinear']
+        }
+gd_lr=GridSearchCV(estimator=linear_model.LogisticRegression(),param_grid=hyper,verbose=True)
+accuracy, classi = train_model(gd_lr, xtrain_count, train_y, xtest_count, 'LR_CV.pkl')
+#accuracy, classi = train_model(linear_model.LogisticRegression(), xtrain_count, train_y, xtest_count, 'LR_CV.pkl')
 print ("LR, Count Vectors: ", accuracy)
 print ('\n',classi)
-# SVM on Count Vectors
-accuracy, classi =train_model(svm.SVC(), xtrain_count, train_y, xtest_count, '3.pkl')
+print(" best score:",gd_lr.best_score_)
+print(" best estimator :",gd_lr.best_estimator_)
+
+# SVM 
+
+from sklearn.model_selection import GridSearchCV
+
+hyper = {'C':[0.05,0.1,0.2,0.3,0.25,0.4,0.5,0.6,0.7,0.8,0.9,1],
+         'gamma':[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0],
+         'kernel':['rbf','linear']
+        }
+
+hyper = {'C':[0.05,0.1,0.2,0.3],
+         'gamma':[0.1,0.2],
+         'kernel':['rbf','linear']
+        }
+
+gd_svm=GridSearchCV(estimator=svm.SVC(),param_grid=hyper,verbose=True)
+
+#accuracy, classi =train_model(svm.SVC(), xtrain_count, train_y, xtest_count, 'SVM_CV.pkl')
+accuracy, classi =train_model(gd_svm, xtrain_count, train_y, xtest_count, 'SVM_CV.pkl')
+
 print ("SVM, Count Vectors: ", accuracy)
 print ('\n',classi)
-# KNN on Count Vectors
-accuracy, classi =train_model(KNeighborsClassifier(n_neighbors=50), xtrain_count, train_y, xtest_count, '5.pkl')
+print(" best score:",gd_svm.best_score_)
+print(" best estimator :",gd_svm.best_estimator_)
+
+# KNN 
+
+hyper = { 'n_neighbors' : [15,20,25,30,35,40,45,50],
+               'weights' : ['uniform','distance'],
+               'metric' : ['minkowski','euclidean','manhattan']}
+
+gd_knn=GridSearchCV(estimator=KNeighborsClassifier(n_neighbors=50),param_grid=hyper,verbose=True)
+accuracy, classi =train_model(gd_knn, xtrain_count, train_y, xtest_count, 'KNN_CV.pkl')
 print ("KNN, Count Vectors: ", accuracy)
 print ('\n',classi)
+
+print(" best score:",gd_knn.best_score_)
+print(" best estimator :",gd_knn.best_estimator_)
+
